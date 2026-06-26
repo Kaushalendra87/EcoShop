@@ -17,3 +17,22 @@ def cart_add(request):
         product = get_object_or_404(Product,id=product_id)
         cart.add(product=product, product_qty=product_quantity)
     return JsonResponse({'qty': len(cart)})
+
+def cart_summary(request):
+    cart = Cart(request)
+    return render(request, 'cart/cart_summary.html', {'cart': cart})
+
+def cart_delete(request):
+    cart = Cart(request)
+    if request.method == 'POST':
+        product_id = request.POST.get('product_id')
+        cart.delete(product_id=product_id)
+        
+        cart_total = cart.get_total()
+        cart_qty = len(cart)
+        
+        return JsonResponse({
+            'qty': cart_qty,
+            'total': cart_total
+        })
+    return JsonResponse({'error': 'Invalid request'})

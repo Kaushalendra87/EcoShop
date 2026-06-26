@@ -1,0 +1,175 @@
+{% extends 'myapp/base.html' %}
+
+{% block body %}
+<main class="min-h-screen bg-zinc-50 text-zinc-950 py-8 lg:py-12">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl font-bold tracking-tight mb-8">Shopping Cart</h1>
+
+        <div id="cart-content">
+            {% if cart %}
+                <div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+                    <!-- Left: Cart Items -->
+                    <div class="lg:col-span-8 flex flex-col gap-4">
+                        {% for item in cart %}
+                            <article class="product-row group flex flex-col sm:flex-row gap-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:shadow-md" data-product-id="{{ item.product.id }}">
+                                <!-- Product Image -->
+                                <div class="relative aspect-square w-24 shrink-0 overflow-hidden rounded-lg bg-zinc-100 border border-zinc-100 sm:w-32">
+                                    {% if item.product.image %}
+                                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="h-full w-full object-cover">
+                                    {% else %}
+                                        <div class="flex h-full items-center justify-center text-center text-xs text-zinc-400 font-medium">No Image</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Details -->
+                                <div class="flex flex-1 flex-col justify-between">
+                                    <div class="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                                        <div>
+                                            <h2 class="text-lg font-semibold text-zinc-900 hover:text-emerald-600 transition">
+                                                <a href="{{ item.product.get_absolute_url }}">
+                                                    {{ item.product.name }}
+                                                </a>
+                                            </h2>
+                                            <p class="mt-1 text-sm text-zinc-500 line-clamp-2">{{ item.product.description|truncatewords:12 }}</p>
+                                        </div>
+                                        <div class="text-right shrink-0">
+                                            <p class="text-base font-bold text-zinc-900">Rs.{{ item.total_price|floatformat:2 }}</p>
+                                            <p class="text-xs text-zinc-500">Rs.{{ item.price|floatformat:2 }} each</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Actions & Qty -->
+                                    <div class="mt-4 flex items-center justify-between border-t border-zinc-100 pt-4">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Qty</span>
+                                            <span class="rounded bg-zinc-100 px-2.5 py-1 text-sm font-semibold text-zinc-700">{{ item.qty }}</span>
+                                        </div>
+
+                                        <button type="button" class="delete-btn flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition shadow-sm" data-product-id="{{ item.product.id }}">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Right: Summary Card -->
+                    <div class="lg:col-span-4">
+                        <div class="sticky top-24 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+                            <h2 class="text-lg font-semibold text-zinc-900 border-b border-zinc-100 pb-4 mb-4">Order Summary</h2>
+
+                            <div class="flex flex-col gap-3.5 text-sm mb-6">
+                                <div class="flex justify-between text-zinc-600">
+                                    <span>Subtotal</span>
+                                    <span id="subtotal" class="font-semibold text-zinc-900">Rs.{{ cart.get_total|floatformat:2 }}</span>
+                                </div>
+                                <div class="flex justify-between text-zinc-600">
+                                    <span>Shipping</span>
+                                    <span class="font-semibold text-emerald-600">Free</span>
+                                </div>
+                                <div class="flex justify-between text-zinc-600">
+                                    <span>Estimated Tax</span>
+                                    <span class="font-semibold text-zinc-900">Rs.0.00</span>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-zinc-200 pt-4 mb-6">
+                                <div class="flex justify-between items-baseline">
+                                    <span class="text-base font-bold text-zinc-900">Total Amount</span>
+                                    <span id="total-amount" class="text-2xl font-extrabold text-zinc-900">Rs.{{ cart.get_total|floatformat:2 }}</span>
+                                </div>
+                            </div>
+
+                            <button type="button" class="w-full flex h-12 items-center justify-center rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-md shadow-emerald-100 hover:bg-emerald-700 transition">
+                                Proceed to Checkout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-white p-12 text-center">
+                    <div class="rounded-full bg-zinc-50 p-4 text-zinc-400">
+                        <svg class="h-12 w-12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1,0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0,1-1.12-1.243l1.264-12A1.125 1.125 0 0,1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 1,1-.75 0 .375.375 0 0,1 .75 0zm7.5 0a.375.375 0 1,1-.75 0 .375.375 0 0,1 .75 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-semibold text-zinc-900">Your cart is empty</h3>
+                    <p class="mt-2 text-sm text-zinc-500">Looks like you haven't added anything to your cart yet.</p>
+                    <a href="{% url 'myapp:index' %}" class="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-emerald-600 px-6 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition">
+                        Continue Shopping
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</main>
+
+<!-- Cart AJAX Script -->
+<script>
+    $(document).on("click", ".delete-btn", function(e) {
+        e.preventDefault();
+        const productId = $(this).data("product-id");
+        const $row = $(this).closest('.product-row');
+        const $btn = $(this);
+
+        // Visual loading state for delete button
+        $btn.prop('disabled', true).addClass('opacity-55');
+
+        $.ajax({
+            type: "POST",
+            url: "{% url 'cart_delete' %}",
+            data: {
+                csrfmiddlewaretoken: "{{ csrf_token }}",
+                product_id: productId
+            },
+            success: function(response) {
+                // Update navbar badge
+                const $badge = $('#cart-qty');
+                $badge.text(response.qty);
+                $badge.removeClass('scale-100 bg-emerald-600').addClass('scale-125 bg-amber-500');
+                setTimeout(() => {
+                    $badge.removeClass('scale-125 bg-amber-500').addClass('scale-100 bg-emerald-600');
+                }, 300);
+
+                // Update summary values
+                const formattedTotal = 'Rs.' + parseFloat(response.total).toFixed(2);
+                $('#subtotal').text(formattedTotal);
+                $('#total-amount').text(formattedTotal);
+
+                // Animate row removal
+                $row.fadeOut(300, function() {
+                    $(this).remove();
+                    checkEmpty();
+                });
+            },
+            error: function(xhr, errmsg, err) {
+                console.error("Error removing item:", errmsg);
+                $btn.prop('disabled', false).removeClass('opacity-55');
+            }
+        });
+    });
+
+    function checkEmpty() {
+        if ($('.product-row').length === 0) {
+            $('#cart-content').html(`
+                <div class="flex min-h-[400px] flex-col items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-white p-12 text-center">
+                    <div class="rounded-full bg-zinc-50 p-4 text-zinc-400">
+                        <svg class="h-12 w-12" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1,0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0,1-1.12-1.243l1.264-12A1.125 1.125 0 0,1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 1,1-.75 0 .375.375 0 0,1 .75 0zm7.5 0a.375.375 0 1,1-.75 0 .375.375 0 0,1 .75 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="mt-4 text-lg font-semibold text-zinc-900">Your cart is empty</h3>
+                    <p class="mt-2 text-sm text-zinc-500">Looks like you haven't added anything to your cart yet.</p>
+                    <a href="{% url 'myapp:index' %}" class="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-emerald-600 px-6 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition">
+                        Continue Shopping
+                    </a>
+                </div>
+            `);
+        }
+    }
+</script>
+{% endblock %}
