@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+     <script src="https://code.jquery.com/jquery-4.0.0.js" integrity="sha256-9fsHeVnKBvqh3FB2HYu7g2xseAZ5MlN6Kz/qnkASV8U=" crossorigin="anonymous"></script>
+    <title>E-Commerce</title>
+</head>
+<body>
+    <!-- Navbar -->
+    <header class="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white/80 backdrop-blur-md">
+        <div class="mx-auto flex max-w-7xl h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+            <!-- Logo -->
+            <div class="flex items-center gap-8">
+                <a href="{% url 'myapp:index' %}" class="flex items-center gap-2 text-xl font-bold tracking-tight text-zinc-950">
+                    <span class="rounded-lg bg-emerald-600 p-1.5 text-white shadow-sm">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                    </span>
+                    <span>Eco<span class="text-emerald-600">Shop</span></span>
+                </a>
+                
+                <!-- Nav Links -->
+                <nav class="hidden md:flex items-center gap-6">
+                    <a href="{% url 'myapp:index' %}" class="text-sm font-medium text-zinc-600 hover:text-emerald-600 transition-colors">Home</a>
+                    <a href="#" class="text-sm font-medium text-zinc-600 hover:text-emerald-600 transition-colors">Products</a>
+                    <a href="#" class="text-sm font-medium text-zinc-600 hover:text-emerald-600 transition-colors">Categories</a>
+                </nav>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-md mx-6 hidden sm:block">
+                <form action="{% url 'myapp:index' %}" method="GET" class="relative flex items-center">
+                    <input 
+                        type="text" 
+                        name="search" 
+                        placeholder="Search products..." 
+                        value="{{ query|default:'' }}"
+                        class="w-full h-10 rounded-full border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                    >
+                    <div class="absolute left-3.5 text-zinc-400">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Cart & Actions -->
+            <div class="flex items-center gap-4">
+                <a href="#" class="relative flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 hover:border-emerald-600 hover:text-emerald-600 transition-all shadow-sm" aria-label="Cart">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <span id="cart-qty" class="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-white transition-all duration-300">
+                        {{ cart|length }}
+                    </span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    {% block body %}
+    {% endblock %}
+
+    <!-- Global Cart Script -->
+    <script>
+        $(document).on("click", ".add-to-cart-btn", function (e) {
+            e.preventDefault();
+            const productId = $(this).data("product-id");
+            const qtySelector = $(this).data("qty-selector");
+            let quantity = 1;
+            
+            if (qtySelector && $(qtySelector).length) {
+                quantity = $(qtySelector + " option:selected").text() || $(qtySelector).val() || 1;
+            }
+            
+            const $btn = $(this);
+            const originalText = $btn.html();
+            
+            // Disable button and show spinner
+            $btn.prop('disabled', true).html(`
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg> Adding...
+            `);
+
+            $.ajax({
+                type: "POST",
+                url: '{% url "cart_add" %}',
+                data: {
+                    csrfmiddlewaretoken: "{{ csrf_token }}",
+                    product_id: productId,
+                    product_quantity: quantity,
+                },
+                success: function (response) {
+                    // Update cart badge
+                    const $badge = $('#cart-qty');
+                    $badge.text(response.qty);
+                    
+                    // Bounce animation
+                    $badge.removeClass('scale-100 bg-emerald-600').addClass('scale-125 bg-amber-500');
+                    setTimeout(() => {
+                        $badge.removeClass('scale-125 bg-amber-500').addClass('scale-100 bg-emerald-600');
+                    }, 300);
+                    
+                    // Show success state on button
+                    $btn.removeClass('bg-zinc-950 hover:bg-emerald-700').addClass('bg-emerald-600');
+                    $btn.html(`
+                        <svg class="mr-2 h-4 w-4 inline-block" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                        </svg> Added!
+                    `);
+                    
+                    setTimeout(() => {
+                        $btn.prop('disabled', false).html(originalText);
+                        $btn.removeClass('bg-emerald-600').addClass('bg-zinc-950 hover:bg-emerald-700');
+                    }, 1000);
+                },
+                error: function (xhr, errmsg, err) {
+                    console.error("Error adding to cart:", errmsg);
+                    $btn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
