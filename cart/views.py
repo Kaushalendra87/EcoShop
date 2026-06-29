@@ -6,6 +6,8 @@ from .models import Order, OrderItem
 from .forms import CheckoutForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
+from django.core.mail import send_mail
+from django.conf import settings
 
 # Create your views here.
 def cart_add(request):
@@ -90,7 +92,58 @@ def order_success(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     return render(request, 'cart/order_success.html', {'order': order})
 
+@login_required
+def my_orders(request):
+    orders = Order.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'cart/my_orders.html', {'orders': orders})
+
+@login_required
+def accept_delivery(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    if request.method == 'POST':
+        order.is_completed = True
+        order.status = 'Completed'
+        order.save()
+        messages.success(request, f"Order #{order.id} delivery confirmed and completed!")
+    return redirect('my_orders')
+
 @user_passes_test(lambda u: u.is_superuser)
 def admin_orders(request):
-    orders = Order.objects.all().order_by('-created_at')
-    return render(request, 'cart/admin_orders.html', {'orders': orders})
+    show_completed = request.GET.get('completed', 'false') == 'true'
+    if show_completed:
+        orders = Order.objects.filter(is_completed=True).order_by('-created_at')
+    else:
+        orders = Order.objects.filter(is_completed=False).order_by('-created_at')
+    return render(request, 'cart/admin_orders.html', {'orders': orders, 'show_completed': show_completed})
+
+@user_passes_test(lambda u: u.is_superuser)
+def notify_delivery(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if request.method == 'POST':
+        order.status = 'Out for Delivery'
+        order.delivery_notified = True
+        order.save()
+
+        # Send notification email to user
+        subject = f"Order #{order.id} is Out for Delivery! - EcoShop"
+        message = (
+            f"Hello {order.full_name},\n\n"
+            f"Your order #{order.id} is currently out for delivery to your address:\n"
+            f"{order.address}, {order.city}.\n\n"
+            f"Once you receive your order, please log in to EcoShop and click 'Accept Delivery' "
+            f"to complete the order.\n\n"
+            f"Thank you for shopping with EcoShop!"
+        )
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=getattr(settings, 'EMAIL_HOST_USER', 'noreply@ecoshop.com'),
+                recipient_list=[order.email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Error sending delivery email: {e}")
+
+        messages.success(request, f"Delivery notification sent to {order.full_name} for Order #{order.id}.")
+    return redirect('admin_orders')

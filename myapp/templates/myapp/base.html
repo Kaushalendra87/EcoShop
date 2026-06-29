@@ -59,6 +59,9 @@
                             + Add Item
                         </a>
                     {% endif %}
+                    <a href="{% url 'my_orders' %}" class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 hover:text-emerald-700 inline-flex">
+                        My Orders
+                    </a>
                     <a href="{% url 'profile' %}" class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 hover:text-emerald-700 inline-flex">
                         {{ user.username }}
                     </a>

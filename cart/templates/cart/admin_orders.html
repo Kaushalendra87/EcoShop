@@ -3,16 +3,28 @@
 {% block body %}
 <main class="min-h-screen bg-zinc-50 text-zinc-950 py-8 lg:py-12">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between mb-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
                 <span class="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 border border-amber-200">Superuser Dashboard</span>
                 <h1 class="text-3xl font-bold tracking-tight text-zinc-900 mt-1">Customer Orders</h1>
             </div>
-            <a href="{% url 'myapp:add_product' %}" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
-                </svg>
-                Add New Item
+            <div class="flex items-center gap-3">
+                <a href="{% url 'myapp:add_product' %}" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Add New Item
+                </a>
+            </div>
+        </div>
+
+        <!-- Order Status Tabs -->
+        <div class="flex border-b border-zinc-200 mb-6 gap-6">
+            <a href="{% url 'admin_orders' %}" class="pb-3 text-sm font-semibold border-b-2 transition {% if not show_completed %}border-emerald-600 text-emerald-600{% else %}border-transparent text-zinc-500 hover:text-zinc-700{% endif %}">
+                Active Orders
+            </a>
+            <a href="{% url 'admin_orders' %}?completed=true" class="pb-3 text-sm font-semibold border-b-2 transition {% if show_completed %}border-emerald-600 text-emerald-600{% else %}border-transparent text-zinc-500 hover:text-zinc-700{% endif %}">
+                Completed & Delivered Orders
             </a>
         </div>
 
@@ -26,7 +38,9 @@
                                 <p class="text-xs text-zinc-500">Placed on {{ order.created_at|date:"M d, Y H:i" }} by {{ order.user.username }}</p>
                             </div>
                             <div class="flex items-center gap-3">
-                                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">{{ order.status }}</span>
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold border {% if order.is_completed %}bg-emerald-50 text-emerald-700 border-emerald-200{% elif order.delivery_notified %}bg-sky-50 text-sky-700 border-sky-200{% else %}bg-amber-50 text-amber-700 border-amber-200{% endif %}">
+                                    {{ order.status }}
+                                </span>
                                 <span class="text-lg font-extrabold text-zinc-900">Rs.{{ order.total_price|floatformat:2 }}</span>
                             </div>
                         </div>
@@ -54,6 +68,27 @@
                                     <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mt-3 mb-1">Shipping Address</h3>
                                     <p class="text-zinc-600">{{ order.address }}, {{ order.city }} - {{ order.postal_code }}</p>
                                 </div>
+
+                                {% if not order.is_completed %}
+                                    <div class="mt-4 pt-3 border-t border-zinc-200">
+                                        <form method="POST" action="{% url 'notify_delivery' order.id %}">
+                                            {% csrf_token %}
+                                            {% if order.delivery_notified %}
+                                                <div class="flex items-center justify-between">
+                                                    <span class="text-xs text-sky-600 font-semibold">✓ Delivery Notification Sent</span>
+                                                    <button type="submit" class="text-xs font-semibold text-zinc-600 hover:text-zinc-900 underline">Resend Notification</button>
+                                                </div>
+                                            {% else %}
+                                                <button type="submit" class="w-full flex items-center justify-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-700 transition">
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                                                    </svg>
+                                                    Send Delivery Notification to Customer
+                                                </button>
+                                            {% endif %}
+                                        </form>
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -61,7 +96,9 @@
             </div>
         {% else %}
             <div class="rounded-xl border border-dashed border-zinc-200 bg-white p-12 text-center">
-                <p class="text-zinc-500 font-medium">No customer orders have been placed yet.</p>
+                <p class="text-zinc-500 font-medium">
+                    {% if show_completed %}No completed orders found.{% else %}No active pending orders.{% endif %}
+                </p>
             </div>
         {% endif %}
     </div>

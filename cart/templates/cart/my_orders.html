@@ -1,0 +1,88 @@
+{% extends 'myapp/base.html' %}
+
+{% block body %}
+<main class="min-h-screen bg-zinc-50 text-zinc-950 py-8 lg:py-12">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl font-bold tracking-tight text-zinc-900 mb-8">My Orders</h1>
+
+        {% if orders %}
+            <div class="space-y-6">
+                {% for order in orders %}
+                    <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-100 pb-4 mb-4 gap-2">
+                            <div>
+                                <h2 class="text-lg font-bold text-zinc-900">Order #{{ order.id }}</h2>
+                                <p class="text-xs text-zinc-500">Placed on {{ order.created_at|date:"M d, Y H:i" }}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold border {% if order.is_completed %}bg-emerald-50 text-emerald-700 border-emerald-200{% elif order.delivery_notified %}bg-sky-50 text-sky-700 border-sky-200{% else %}bg-amber-50 text-amber-700 border-amber-200{% endif %}">
+                                    {{ order.status }}
+                                </span>
+                                <span class="text-lg font-extrabold text-zinc-900">Rs.{{ order.total_price|floatformat:2 }}</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Items -->
+                            <div>
+                                <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-3">Items Purchased</h3>
+                                <ul class="divide-y divide-zinc-100 border border-zinc-100 rounded-lg p-3 bg-zinc-50/50">
+                                    {% for item in order.items.all %}
+                                        <li class="flex justify-between items-center py-2 first:pt-0 last:pb-0 text-sm">
+                                            <span class="font-medium text-zinc-800">{{ item.quantity }} × {{ item.product.name }}</span>
+                                            <span class="text-zinc-600 font-semibold">Rs.{{ item.price|floatformat:2 }}</span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+
+                            <!-- Shipping Details & Delivery Confirmation Action -->
+                            <div class="text-sm bg-zinc-50/50 p-4 rounded-lg border border-zinc-100 flex flex-col justify-between">
+                                <div>
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">Delivery Details</h3>
+                                    <p class="font-bold text-zinc-900">{{ order.full_name }}</p>
+                                    <p class="text-zinc-600">{{ order.address }}, {{ order.city }} - {{ order.postal_code }}</p>
+                                    <p class="text-zinc-600">Phone: {{ order.phone }}</p>
+                                </div>
+
+                                <div class="mt-4 pt-3 border-t border-zinc-200">
+                                    {% if order.is_completed %}
+                                        <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 p-2.5 rounded-md border border-emerald-200">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                            Delivery Confirmed & Order Completed
+                                        </div>
+                                    {% elif order.delivery_notified %}
+                                        <div class="bg-sky-50 border border-sky-200 p-3 rounded-lg">
+                                            <p class="text-xs text-sky-800 font-medium mb-2">🚚 Your order is out for delivery! Please confirm when received:</p>
+                                            <form method="POST" action="{% url 'accept_delivery' order.id %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition">
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                    Accept Delivery / Confirm Receipt
+                                                </button>
+                                            </form>
+                                        </div>
+                                    {% else %}
+                                        <p class="text-xs text-zinc-500 italic">Order is being processed by seller.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="rounded-xl border border-dashed border-zinc-200 bg-white p-12 text-center">
+                <p class="text-zinc-500 font-medium mb-4">You have not placed any orders yet.</p>
+                <a href="{% url 'myapp:index' %}" class="inline-flex h-11 items-center justify-center rounded-md bg-emerald-600 px-6 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition">
+                    Start Shopping
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}
